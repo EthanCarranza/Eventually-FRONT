@@ -1,5 +1,6 @@
 export const apiFetch = async (endpoint, options = {}) => {
-  const BASE_URL = "http://localhost:4200/api/v1";
+  const BASE_URL =
+    "https://eventually-back-1zvwarmx1-jackpliskin64s-projects.vercel.app";
 
   const defaultOptions = {
     headers: {},
