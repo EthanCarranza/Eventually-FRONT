@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <title>Eventually!</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <a href="#" id="eventslink" class="logo-link"
+          ><img src="./logo.png" alt="logo" id="logo-img"
+        /></a>
+        <div class="navbar-user">
+          <button id="loginlink">Iniciar Sesión</button>
+          <button id="registerlink">Registrar</button>
+          <button id="personalpagelink" style="display: none">Mi Perfil</button>
+          <button id="logoutlink" style="display: none">Cerrar Sesión</button>
+        </div>
+      </header>
+      <main id="main-content">
+        <div id="event-details-overlay"></div>
+        <div id="event-details-modal"></div>
+      </main>
+      <footer>
+        <h3>2025 - Eventually!</h3>
+      </footer>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
