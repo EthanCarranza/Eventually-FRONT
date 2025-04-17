@@ -415,28 +415,29 @@ button:hover {
 }
 
 #upload-image-btn:hover {
-  background: #003f80;
+  background: linear-gradient(135deg, #339aff, #1a66d1);
 }
 
-#update-username-btn,
-#edit-username-btn,
-#cancel-update-btn {
-  background-color: #28a745;
-  color: #fff;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 5px;
+#cancel-update-btn, 
+#cancel-create-event-btn,
+#delete-profile-btn,
+.cancel-attendance-btn,
+.delete-event-btn {
+  background: linear-gradient(135deg, #8b1e3f, #e53935);
 }
 
-#cancel-update-btn {
-  background-color: #b6322e;
+#cancel-update-btn:hover,
+#cancel-create-event-btn:hover,
+#delete-profile-btn:hover,
+.cancel-attendance-btn:hover,
+.delete-event-btn:hover {
+  background: linear-gradient(135deg, #a42b4d, #f04c4c);
 }
 
-#update-username-btn:hover,
-#edit-username-btn:hover {
-  background-color: #218838;
+.attend-event-btn {
+  background: linear-gradient(135deg, #56ab2f, #a8e063);
 }
 
-#cancel-update-btn:hover {
-  background-color: #8b2724;
+.attend-event-btn:hover {
+  background: linear-gradient(135deg, #72c14c, #b6e176);
 }

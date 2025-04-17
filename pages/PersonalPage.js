@@ -1,4 +1,5 @@
 import { apiFetch } from "../services/apiFetch";
+import { loadComponent } from "../main";
 
 export function render() {
   return `
@@ -16,7 +17,9 @@ export function render() {
         </p>
         <div id="username-section"> 
         <p><strong>Nombre de usuario:</strong> 
-        <span id="user-name"></span> <div id="edit-username-div"><button id="edit-username-btn">Editar</button></p></div>
+        <span id="user-name"></span> <div id="edit-username-div">
+        <button id="edit-username-btn">Editar</button></p></div>
+        <button id="delete-profile-btn">Eliminar mi perfil</button>
         <form id="username-form">
           <input type="text" id="username-input" value="" />
           <button type="submit" id="update-username-btn">Actualizar nombre de usuario</button>
@@ -38,6 +41,7 @@ export async function setupMyProfile() {
   const uploadImageBtn = document.getElementById("upload-image-btn");
   const imageUploadInput = document.getElementById("profile-image-upload");
   const editUsernameBtn = document.getElementById("edit-username-btn");
+  const deleteUserBtn = document.getElementById("delete-profile-btn");
   const cancelUpdateBtn = document.getElementById("cancel-update-btn");
 
   const userId = localStorage.getItem("user");
@@ -73,13 +77,24 @@ export async function setupMyProfile() {
   editUsernameBtn.addEventListener("click", () => {
     userNameSpan.style.display = "none";
     editUsernameBtn.style.display = "none";
+    deleteUserBtn.style.display = "none";
     usernameForm.style.display = "flex";
     feedbackMessage.style.display = "none";
+  });
+
+  deleteUserBtn.addEventListener("click", () => {
+    const confirmDelete = confirm(
+      "¿Estás seguro de que deseas eliminar tu perfil? Esta acción es irreversible."
+    );
+    if (confirmDelete) {
+      deleteUserProfile();
+    }
   });
 
   cancelUpdateBtn.addEventListener("click", () => {
     userNameSpan.style.display = "inline";
     editUsernameBtn.style.display = "inline";
+    deleteUserBtn.style.display = "inline";
     usernameForm.style.display = "none";
     feedbackMessage.style.display = "none";
   });
@@ -88,6 +103,7 @@ export async function setupMyProfile() {
     e.preventDefault();
     const newUsername = usernameInput.value.trim();
     feedbackMessage.style.display = "inline";
+    feedbackMessage.style.color = "red";
     if (!newUsername) {
       feedbackMessage.textContent =
         "El nombre de usuario no puede estar vacío.";
@@ -95,6 +111,14 @@ export async function setupMyProfile() {
     } else if (userNameSpan.textContent.trim() === newUsername) {
       feedbackMessage.textContent =
         "El nombre de usuario nuevo es el mismo que el antiguo.";
+      return;
+    } else if (newUsername.trim().length < 3) {
+      feedbackMessage.textContent =
+        "El nombre de usuario debe tener al menos 3 caracteres";
+      return;
+    } else if (!/\d/.test(newUsername)) {
+      feedbackMessage.textContent =
+        "El nombre de usuario debe tener al menos un número.";
       return;
     }
 
@@ -124,6 +148,7 @@ export async function setupMyProfile() {
         usernameForm.style.display = "none";
         userNameSpan.style.display = "inline";
         editUsernameBtn.style.display = "inline";
+        deleteUserBtn.style.display = "inline";
       } else {
         feedbackMessage.textContent = "El nombre de usuario ya existe.";
         feedbackMessage.style.color = "red";
@@ -135,6 +160,42 @@ export async function setupMyProfile() {
         "Ocurrió un error. Por favor, inténtalo de nuevo.";
     }
   });
+
+  async function deleteUserProfile() {
+    const userId = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+
+    if (!userId || !token) {
+      console.error("Usuario no autenticado o ID no encontrado.");
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        loadComponent("home");
+      } else {
+        feedbackMessage.style.display = "inline";
+        feedbackMessage.style.color = "red";
+        feedbackMessage.textContent =
+          "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.";
+      }
+    } catch (error) {
+      feedbackMessage.style.display = "inline";
+      feedbackMessage.style.color = "red";
+      console.error("Error al eliminar el perfil:", error);
+      feedbackMessage.textContent =
+        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+    }
+  }
 
   uploadImageBtn.addEventListener("click", () => {
     imageUploadInput.click();

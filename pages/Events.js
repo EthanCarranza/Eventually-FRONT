@@ -42,6 +42,7 @@ export function render() {
 
 export async function setupEvents() {
   const eventsListContainer = document.getElementById("events-list");
+  const createEventForm = document.getElementById("create-event-form");
   const createEventButton = document.getElementById("create-event-button");
   const cancelCreateEvent = document.getElementById("cancel-create-event-btn");
   const formContainer = document.getElementById("create-event-form-container");
@@ -88,10 +89,14 @@ export async function setupEvents() {
                 <div class="button-container">
                 <button class="view-event-btn">Ver detalles</button>
                 ${
-                  token && !isCreator && !isAttending
-                    ? `<button class="attend-event-btn">Participar</button>`
+                  token
+                    ? isCreator
+                      ? `<button class="delete-event-btn">Eliminar</button>`
+                      : isAttending
+                      ? `<button class="cancel-attendance-btn">Cancelar participación</button>`
+                      : `<button class="attend-event-btn">Participar</button>`
                     : ""
-                }
+                }               
                 </div>
               </div>
             `;
@@ -118,6 +123,7 @@ export async function setupEvents() {
     createEventButton.style.display = "none";
     eventsListContainer.style.display = "none";
     errorMessage.style.display = "none";
+    createEventForm.reset();
     setupCreateEvent();
   });
 
@@ -126,6 +132,8 @@ export async function setupEvents() {
     eventsListContainer.style.display = "flex";
     createEventButton.style.display = "flex";
     errorMessage.style.display = "none";
+    createEventForm.reset();
+    setupEvents();
   });
 
   function attachEventListeners() {
@@ -144,6 +152,26 @@ export async function setupEvents() {
         const eventItem = e.target.closest(".event-item");
         const eventId = eventItem.querySelector(".event-id").value;
         attendEvent(eventId);
+      });
+    });
+
+    const cancelAttendanceBtns = document.querySelectorAll(
+      ".cancel-attendance-btn"
+    );
+    cancelAttendanceBtns.forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const eventItem = e.target.closest(".event-item");
+        const eventId = eventItem.querySelector(".event-id").value;
+        cancelAttendance(eventId);
+      });
+    });
+
+    const deleteEventBtns = document.querySelectorAll(".delete-event-btn");
+    deleteEventBtns.forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const eventItem = e.target.closest(".event-item");
+        const eventId = eventItem.querySelector(".event-id").value;
+        deleteEvent(eventId);
       });
     });
   }
@@ -252,6 +280,75 @@ export async function setupEvents() {
       errorMessage.style.color = "red";
     }
   }
+
+  async function cancelAttendance(eventId) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Debes iniciar sesión para cancelar tu participación.");
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`/events/attendees/${eventId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.message !== "No changes") {
+        errorMessage.textContent =
+          "Has cancelado tu participación en el evento.";
+        errorMessage.style.color = "orange";
+        setupEvents();
+      } else {
+        throw new Error("Fallo al cancelar la participación.");
+      }
+    } catch (error) {
+      console.error("Error al cancelar participación:", error);
+      errorMessage.textContent = "Error al cancelar. Inténtalo de nuevo.";
+      errorMessage.style.color = "red";
+    }
+  }
+
+  async function deleteEvent(eventId) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Debes iniciar sesión para eliminar un evento.");
+      return;
+    }
+
+    const confirmDelete = confirm(
+      "¿Estás seguro de que deseas eliminar este evento?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await apiFetch(`/events/${eventId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.message !== "No changes") {
+        errorMessage.textContent = "Evento eliminado exitosamente.";
+        errorMessage.style.color = "orange";
+        setupEvents();
+      } else {
+        throw new Error("Fallo al eliminar el evento.");
+      }
+    } catch (error) {
+      console.error("Error al eliminar el evento:", error);
+      errorMessage.textContent =
+        "Hubo un error al eliminar el evento. Inténtalo de nuevo.";
+      errorMessage.style.color = "red";
+    }
+  }
 }
 
 export function setupCreateEvent() {
@@ -275,73 +372,78 @@ export function setupCreateEvent() {
     imageUploadInput.click();
   });
 
-  createEventForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (!createEventForm.dataset.listenerAdded) {
+    createEventForm.addEventListener("submit", async (e) => {
+      console.log("submit");
+      e.preventDefault();
 
-    const loadingMessage = document.createElement("p");
-    loadingMessage.textContent = "Procesando tu petición...";
-    loadingMessage.style.color = "blue";
-    loadingMessage.style.display = "none";
-    createEventForm.parentElement.appendChild(loadingMessage);
-
-    const title = document.getElementById("event-title").value.trim();
-    const description = document
-      .getElementById("event-description")
-      .value.trim();
-    const date = document.getElementById("event-date").value;
-    const location = document.getElementById("event-location").value.trim();
-    const image = imageUploadInput.files[0];
-
-    if (image && image.size > maxFileSize) {
-      feedbackMessage.textContent =
-        "El tamaño de la imagen debe ser menor a 5MB.";
-      feedbackMessage.style.color = "red";
-      return;
-    }
-
-    if (!title || !description || !date || !location) {
-      feedbackMessage.textContent = "Todos los campos son requeridos.";
-      feedbackMessage.style.color = "red";
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("date", date);
-    formData.append("location", location);
-    formData.append("img", image);
-    formData.append("creator", localStorage.getItem("user"));
-
-    const token = localStorage.getItem("token");
-
-    try {
-      loadingMessage.style.display = "block";
-      formContainer.style.display = "none";
-      feedbackMessage.textContent = "";
-      const res = await apiFetch("/events", {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        setupEvents();
-      } else {
-        formContainer.style.display = "block";
-        feedbackMessage.textContent = "Fallo al crear evento.";
-        feedbackMessage.style.color = "red";
-      }
-    } catch (error) {
-      formContainer.style.display = "block";
-      console.error("Error al crear el evento:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
-      feedbackMessage.style.color = "red";
-    } finally {
+      const loadingMessage = document.createElement("p");
+      loadingMessage.textContent = "Procesando tu petición...";
+      loadingMessage.style.color = "blue";
       loadingMessage.style.display = "none";
-    }
-  });
+      createEventForm.parentElement.appendChild(loadingMessage);
+
+      const title = document.getElementById("event-title").value.trim();
+      const description = document
+        .getElementById("event-description")
+        .value.trim();
+      const date = document.getElementById("event-date").value;
+      const location = document.getElementById("event-location").value.trim();
+      const image = imageUploadInput.files[0];
+
+      if (image && image.size > maxFileSize) {
+        feedbackMessage.textContent =
+          "El tamaño de la imagen debe ser menor a 5MB.";
+        feedbackMessage.style.color = "red";
+        return;
+      }
+
+      if (!title || !description || !date || !location) {
+        feedbackMessage.textContent = "Todos los campos son requeridos.";
+        feedbackMessage.style.color = "red";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("date", date);
+      formData.append("location", location);
+      formData.append("img", image);
+      formData.append("creator", localStorage.getItem("user"));
+
+      const token = localStorage.getItem("token");
+
+      try {
+        loadingMessage.style.display = "block";
+        formContainer.style.display = "none";
+        feedbackMessage.textContent = "";
+        const res = await apiFetch("/events", {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          setupEvents();
+        } else {
+          formContainer.style.display = "block";
+          feedbackMessage.textContent = "Fallo al crear evento.";
+          feedbackMessage.style.color = "red";
+        }
+      } catch (error) {
+        formContainer.style.display = "block";
+        console.error("Error al crear el evento:", error);
+        feedbackMessage.textContent =
+          "Ocurrió un error. Por favor, inténtalo de nuevo.";
+        feedbackMessage.style.color = "red";
+      } finally {
+        loadingMessage.style.display = "none";
+        createEventForm.reset();
+      }
+    });
+    createEventForm.dataset.listenerAdded = "true";
+  }
 }
