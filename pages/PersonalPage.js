@@ -2,6 +2,7 @@ import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
 import { UsernameForm } from "../components/UsernameForm.js";
 import { FeedbackMessage } from "../components/FeedbackMessage.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
 
 export function render() {
   return `
@@ -41,19 +42,26 @@ export async function setupMyProfile() {
   const editUsernameBtn = document.getElementById("edit-username-btn");
   const deleteUserBtn = document.getElementById("delete-profile-btn");
   const cancelUpdateBtn = document.getElementById("cancel-update-btn");
-
+  const profileContainer = document.getElementById("profile-container");
+  if (profileContainer) {
+    profileContainer.style.opacity = 0;
+    profileContainer.style.display = "none";
+    profileContainer.style.transition = "opacity 0.7s";
+  }
+  showGlobalSpinner();
+  // Carga datos del usuario y solo entonces muestra el fade-in
   const userId = localStorage.getItem("user");
   if (!userId) {
-    console.error("No se encontró el usuario en el localStorage");
+    hideGlobalSpinner();
+    if (profileContainer) {
+      profileContainer.style.display = "flex";
+      profileContainer.style.opacity = 1;
+    }
     feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
     return;
   }
-
   try {
-    const res = await apiFetch(`/users/${userId}`, {
-      method: "GET",
-    });
-
+    const res = await apiFetch(`/users/${userId}`, { method: "GET" });
     if (res) {
       const { userName, email, image } = await res.json();
       userNameSpan.textContent = userName;
@@ -63,8 +71,17 @@ export async function setupMyProfile() {
     } else {
       feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
     }
+    hideGlobalSpinner();
+    if (profileContainer) {
+      profileContainer.style.display = "flex";
+      setTimeout(() => { profileContainer.style.opacity = 1; }, 10);
+    }
   } catch (error) {
-    console.error("Error loading user data:", error);
+    hideGlobalSpinner();
+    if (profileContainer) {
+      profileContainer.style.display = "flex";
+      setTimeout(() => { profileContainer.style.opacity = 1; }, 10);
+    }
     feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
   }
 
@@ -95,6 +112,8 @@ export async function setupMyProfile() {
 
   usernameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (profileContainer) profileContainer.style.opacity = 0.5;
+    showGlobalSpinner();
     const newUsername = usernameInput.value.trim();
     feedbackMessage.style.display = "inline";
     feedbackMessage.style.color = "red";
@@ -111,16 +130,13 @@ export async function setupMyProfile() {
       feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario debe tener al menos un número.", type: "error" });
       return;
     }
-
     const token = localStorage.getItem("token");
-
     if (!token) {
       console.error(
         "No se encontró el token, el usuario no esta autentificado."
       );
       return;
     }
-
     try {
       const res = await apiFetch(`/users/${userId}`, {
         method: "PUT",
@@ -129,6 +145,8 @@ export async function setupMyProfile() {
         },
         body: JSON.stringify({ userName: newUsername }),
       });
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       if (res) {
         feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario se actualizó correctamente.", type: "success" });
@@ -141,6 +159,8 @@ export async function setupMyProfile() {
         feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario ya existe.", type: "error" });
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       console.error("Error ual actualizar el nombre de usuario:", error);
       feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
@@ -150,20 +170,21 @@ export async function setupMyProfile() {
   async function deleteUserProfile() {
     const userId = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-
     if (!userId || !token) {
       console.error("Usuario no autenticado o ID no encontrado.");
       return;
     }
-
     try {
+      showGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 0.5;
       const res = await apiFetch(`/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       if (res.ok) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -174,6 +195,8 @@ export async function setupMyProfile() {
         feedbackMessage.innerHTML = FeedbackMessage({ message: "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.", type: "error" });
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       feedbackMessage.style.color = "red";
       console.error("Error al eliminar el perfil:", error);
@@ -188,12 +211,13 @@ export async function setupMyProfile() {
   imageUploadInput.addEventListener("change", async () => {
     const file = imageUploadInput.files[0];
     if (!file) return;
+    if (profileContainer) profileContainer.style.opacity = 0.5;
+    showGlobalSpinner();
     feedbackMessage.style.display = "inline";
     feedbackMessage.innerHTML = FeedbackMessage({ message: "Procesando registro...", type: "info" });
     const formData = new FormData();
     formData.append("img", file);
     const token = localStorage.getItem("token");
-
     try {
       const res = await apiFetch(`/users/profileImage/${userId}`, {
         method: "PUT",
@@ -202,7 +226,8 @@ export async function setupMyProfile() {
           Authorization: `Bearer ${token}`,
         },
       });
-
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       if (res.ok) {
         const { imageUrl } = await res.json();
         profilePicture.src = imageUrl;
@@ -211,6 +236,8 @@ export async function setupMyProfile() {
         feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al subir la imagen.", type: "error" });
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       console.error("Error  al subir la imagen:", error);
       feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
     }

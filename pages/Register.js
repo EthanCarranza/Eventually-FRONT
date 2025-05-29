@@ -2,6 +2,7 @@ import { submit } from "./Login.js";
 import { apiFetch } from "../services/apiFetch.js";
 import { RegisterForm } from "../components/RegisterForm.js";
 import { FeedbackMessage } from "../components/FeedbackMessage.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
 
 export function render() {
   return `
@@ -17,6 +18,22 @@ export function render() {
 
 export function setupRegister() {
   const form = document.querySelector("#register-form");
+  const registerContainer = document.getElementById("register-container");
+  if (registerContainer) {
+    registerContainer.style.opacity = 0;
+    registerContainer.style.display = "none";
+    registerContainer.style.transition = "opacity 0.7s";
+  }
+  showGlobalSpinner();
+  setTimeout(() => {
+    hideGlobalSpinner();
+    if (registerContainer) {
+      registerContainer.style.display = "block";
+      setTimeout(() => {
+        registerContainer.style.opacity = 1;
+      }, 10);
+    }
+  }, 400);
 
   let isUsernameInput = false;
 
@@ -55,6 +72,8 @@ export function setupRegister() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (registerContainer) registerContainer.style.opacity = 0.5;
+    showGlobalSpinner();
 
     const username = usernameInput.value.trim();
     const email = emailInput.value.trim();
@@ -72,8 +91,10 @@ export function setupRegister() {
     }
 
     try {
-      await submitRegister(username, email, password);
+      await submitRegister(username, email, password, registerContainer);
     } catch (error) {
+      hideGlobalSpinner();
+      if (registerContainer) registerContainer.style.opacity = 1;
       console.error("Error al registrar:", error);
       showErrorMessage("Ocurrió un error. Por favor, inténtalo más tarde.");
     }
@@ -258,26 +279,27 @@ export function setupRegister() {
   }
 }
 
-const submitRegister = async (username, email, password) => {
+const submitRegister = async (username, email, password, registerContainer) => {
   const data = {
     userName: username,
     email: email,
     password: password,
   };
-
   const loadingMessage = document.createElement("p");
   loadingMessage.textContent = "Procesando registro...";
   document
     .querySelector("#error-message-container")
     .appendChild(loadingMessage);
-
+  showGlobalSpinner();
+  if (registerContainer) registerContainer.style.opacity = 0.5;
   try {
     const res = await apiFetch("/users/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
     loadingMessage.remove();
-
+    hideGlobalSpinner();
+    if (registerContainer) registerContainer.style.opacity = 1;
     if (res.status === 409) {
       if (res.json == "Usuario ya existente") {
         showErrorMessage(
@@ -295,14 +317,21 @@ const submitRegister = async (username, email, password) => {
       );
       return;
     }
-
-    showSuccessMessage("Registro exitoso! Realizando el login...");
-
-    setTimeout(() => {
+    // Fade out antes del login automático
+    if (registerContainer) {
+      registerContainer.style.opacity = 0;
+      setTimeout(() => {
+        showGlobalSpinner();
+        submit(username, password);
+      }, 400);
+    } else {
+      showGlobalSpinner();
       submit(username, password);
-    }, 2000);
+    }
   } catch (error) {
     loadingMessage.remove();
+    hideGlobalSpinner();
+    if (registerContainer) registerContainer.style.opacity = 1;
     showErrorMessage(
       "Hubo un error al intentar registrarse. Por favor, inténtalo más tarde."
     );

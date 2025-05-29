@@ -3,6 +3,7 @@ import { EventCard } from "../components/EventCard.js";
 import { EventForm } from "../components/EventForm.js";
 import { EventDetailsModal } from "../components/EventDetailsModal.js";
 import { FeedbackMessage } from "../components/FeedbackMessage.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
 
 export function render() {
   return `
@@ -38,45 +39,75 @@ export async function setupEvents() {
     createEventButton.style.display = "none";
   }
 
+  // Spinner global mientras carga la página de eventos
+  showGlobalSpinner();
+  // Fade-in para el contenedor de eventos y el título/botón
+  const eventsMain = document.querySelector('.events-main');
+  if (eventsMain) {
+    eventsMain.style.opacity = 0;
+    eventsMain.style.transition = 'opacity 0.7s';
+  }
+  let fadeInApplied = false;
+  const fadeIn = () => {
+    hideGlobalSpinner();
+    if (!fadeInApplied) {
+      if (eventsMain) eventsMain.style.opacity = 1;
+      fadeInApplied = true;
+    }
+  };
+
   try {
+    const start = Date.now();
     const res = await apiFetch("/events", {
       method: "GET",
     });
+    const minDelay = 1000;
+    const elapsed = Date.now() - start;
+    const wait = elapsed < minDelay ? minDelay - elapsed : 0;
     if (res) {
       const events = await res.json();
       if (events && events.length > 0) {
-        eventsListContainer.innerHTML = events
-          .map((event) => {
-            const token = localStorage.getItem("token");
-            const user = localStorage.getItem("user");
-            const isCreator = user && event.creator === user;
-            const isAttending =
-              event.attendees &&
-              event.attendees.some((attendee) => {
-                return attendee._id === user;
+        setTimeout(() => {
+          eventsListContainer.innerHTML = events
+            .map((event) => {
+              const token = localStorage.getItem("token");
+              const user = localStorage.getItem("user");
+              const isCreator = user && event.creator === user;
+              const isAttending =
+                event.attendees &&
+                event.attendees.some((attendee) => {
+                  return attendee._id === user;
+                });
+              return EventCard({
+                event,
+                isCreator,
+                isAttending,
+                token
               });
-            return EventCard({
-              event,
-              isCreator,
-              isAttending,
-              token
-            });
-          })
-          .join("");
-
-        attachEventListeners();
+            })
+            .join("");
+          fadeIn();
+          attachEventListeners();
+        }, wait);
       } else {
-        eventsListContainer.innerHTML = "<p>No se encontraron eventos.</p>";
+        setTimeout(() => {
+          eventsListContainer.innerHTML = "<p>No se encontraron eventos.</p>";
+          fadeIn();
+        }, wait);
       }
     } else {
-      console.error("Error al hacer fetch de los eventos:", res);
-      eventsListContainer.innerHTML =
-        "<p>Error al hacer fetch de los eventos. Por favor, inténtalo de nuevo más tarde.</p>";
+      setTimeout(() => {
+        eventsListContainer.innerHTML =
+          "<p>Error al hacer fetch de los eventos. Por favor, inténtalo de nuevo más tarde.</p>";
+        fadeIn();
+      }, wait);
     }
   } catch (error) {
-    console.error("Error al hacer fetch de los eventos:", error);
-    eventsListContainer.innerHTML =
-      "<p>Error al hacer fetch de los eventos. Por favor, inténtalo de nuevo más tarde.</p>";
+    setTimeout(() => {
+      eventsListContainer.innerHTML =
+        "<p>Error al hacer fetch de los eventos. Por favor, inténtalo de nuevo más tarde.</p>";
+      fadeIn();
+    }, 1000);
   }
 
   createEventButton.addEventListener("click", () => {
