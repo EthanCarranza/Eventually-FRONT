@@ -1,20 +1,14 @@
-// components/GlobalSpinner.js
-// Reusable global spinner overlay component
-
 let spinnerInjected = false;
 
 export function showGlobalSpinner() {
-  // Remove any previous spinner
   const prevSpinner = document.getElementById('global-spinner');
   if (prevSpinner) prevSpinner.remove();
 
-  // Create overlay
   const globalSpinner = document.createElement('div');
   globalSpinner.id = 'global-spinner';
   globalSpinner.innerHTML = '<span class="spinner"></span>';
   document.body.appendChild(globalSpinner);
 
-  // Inject CSS only once
   if (!spinnerInjected && !document.getElementById('spinner-style')) {
     const style = document.createElement('style');
     style.id = 'spinner-style';

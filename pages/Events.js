@@ -22,6 +22,7 @@ export function render() {
 }
 
 export async function setupEvents() {
+  document.body.classList.add('loading');
   const eventsListContainer = document.getElementById("events-list");
   const createEventForm = document.getElementById("create-event-form");
   const createEventButton = document.getElementById("create-event-button");
@@ -39,9 +40,7 @@ export async function setupEvents() {
     createEventButton.style.display = "none";
   }
 
-  // Spinner global mientras carga la página de eventos
   showGlobalSpinner();
-  // Fade-in para el contenedor de eventos y el título/botón
   const eventsMain = document.querySelector('.events-main');
   if (eventsMain) {
     eventsMain.style.opacity = 0;
@@ -52,6 +51,7 @@ export async function setupEvents() {
     hideGlobalSpinner();
     if (!fadeInApplied) {
       if (eventsMain) eventsMain.style.opacity = 1;
+      document.body.classList.remove('loading');
       fadeInApplied = true;
     }
   };

@@ -3,6 +3,8 @@ import { loadComponent } from "../main";
 import { UsernameForm } from "../components/UsernameForm.js";
 import { FeedbackMessage } from "../components/FeedbackMessage.js";
 import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import { fadeInElement, showAndFadeInAfterLoading, focusFirstErrorInput, setInputAriaError, clearInputAriaError, addInputClearListeners } from "../components/uiUtils.js";
+import { showErrorMessage, showSuccessMessage, clearErrorMessage } from "../components/feedbackUtils.js";
 
 export function render() {
   return `
@@ -31,6 +33,7 @@ export function render() {
 }
 
 export async function setupMyProfile() {
+  document.body.classList.add('loading');
   const usernameForm = document.getElementById("username-form");
   const usernameInput = document.getElementById("username-input");
   const feedbackMessage = document.getElementById("feedback-message");
@@ -43,47 +46,40 @@ export async function setupMyProfile() {
   const deleteUserBtn = document.getElementById("delete-profile-btn");
   const cancelUpdateBtn = document.getElementById("cancel-update-btn");
   const profileContainer = document.getElementById("profile-container");
-  if (profileContainer) {
-    profileContainer.style.opacity = 0;
-    profileContainer.style.display = "none";
-    profileContainer.style.transition = "opacity 0.7s";
-  }
   showGlobalSpinner();
-  // Carga datos del usuario y solo entonces muestra el fade-in
-  const userId = localStorage.getItem("user");
-  if (!userId) {
-    hideGlobalSpinner();
-    if (profileContainer) {
-      profileContainer.style.display = "flex";
-      profileContainer.style.opacity = 1;
-    }
-    feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
-    return;
-  }
-  try {
-    const res = await apiFetch(`/users/${userId}`, { method: "GET" });
-    if (res) {
-      const { userName, email, image } = await res.json();
-      userNameSpan.textContent = userName;
-      userEmailSpan.textContent = email;
-      usernameInput.value = userName;
-      profilePicture.src = image;
-    } else {
+  await showAndFadeInAfterLoading(profileContainer, "flex", async () => {
+    const userId = localStorage.getItem("user");
+    if (!userId) {
+      hideGlobalSpinner();
+      if (profileContainer) {
+        profileContainer.style.display = "flex";
+        profileContainer.style.opacity = 1;
+      }
       feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
+      return;
     }
-    hideGlobalSpinner();
-    if (profileContainer) {
-      profileContainer.style.display = "flex";
-      setTimeout(() => { profileContainer.style.opacity = 1; }, 10);
+    try {
+      const res = await apiFetch(`/users/${userId}`, { method: "GET" });
+      if (res) {
+        const { userName, email, image } = await res.json();
+        userNameSpan.textContent = userName;
+        userEmailSpan.textContent = email;
+        usernameInput.value = userName;
+        profilePicture.src = image;
+      } else {
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
+      }
+      hideGlobalSpinner();
+    } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) {
+        profileContainer.style.display = "flex";
+        profileContainer.style.opacity = 1;
+      }
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
     }
-  } catch (error) {
-    hideGlobalSpinner();
-    if (profileContainer) {
-      profileContainer.style.display = "flex";
-      setTimeout(() => { profileContainer.style.opacity = 1; }, 10);
-    }
-    feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
-  }
+    document.body.classList.remove('loading');
+  });
 
   editUsernameBtn.addEventListener("click", () => {
     userNameSpan.style.display = "none";
@@ -91,6 +87,7 @@ export async function setupMyProfile() {
     deleteUserBtn.style.display = "none";
     usernameForm.style.display = "flex";
     feedbackMessage.style.display = "none";
+    clearErrorMessage(feedbackMessage);
   });
 
   deleteUserBtn.addEventListener("click", () => {
@@ -108,26 +105,39 @@ export async function setupMyProfile() {
     deleteUserBtn.style.display = "inline";
     usernameForm.style.display = "none";
     feedbackMessage.style.display = "none";
+    clearErrorMessage(feedbackMessage);
   });
 
   usernameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (profileContainer) profileContainer.style.opacity = 0.5;
     showGlobalSpinner();
+    clearInputAriaError(usernameInput);
     const newUsername = usernameInput.value.trim();
     feedbackMessage.style.display = "inline";
     feedbackMessage.style.color = "red";
+    let valid = true;
     if (!newUsername) {
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario no puede estar vacío.", type: "error" });
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario no puede estar vacío.");
     } else if (userNameSpan.textContent.trim() === newUsername) {
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario nuevo es el mismo que el antiguo.", type: "error" });
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario nuevo es el mismo que el antiguo.");
     } else if (newUsername.trim().length < 3) {
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario debe tener al menos 3 caracteres", type: "error" });
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario debe tener al menos 3 caracteres");
     } else if (!/\d/.test(newUsername)) {
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario debe tener al menos un número.", type: "error" });
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario debe tener al menos un número.");
+    }
+    if (!valid) {
+      focusFirstErrorInput(usernameForm);
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       return;
     }
     const token = localStorage.getItem("token");
@@ -149,23 +159,28 @@ export async function setupMyProfile() {
       if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       if (res) {
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario se actualizó correctamente.", type: "success" });
+        clearInputAriaError(usernameInput);
+        showSuccessMessage(feedbackMessage, "El nombre de usuario se actualizó correctamente.");
         userNameSpan.textContent = newUsername;
         usernameForm.style.display = "none";
         userNameSpan.style.display = "inline";
         editUsernameBtn.style.display = "inline";
         deleteUserBtn.style.display = "inline";
       } else {
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario ya existe.", type: "error" });
+        setInputAriaError(usernameInput, "invalid-username");
+        showErrorMessage(feedbackMessage, "El nombre de usuario ya existe.");
       }
     } catch (error) {
       hideGlobalSpinner();
       if (profileContainer) profileContainer.style.opacity = 1;
+      setInputAriaError(usernameInput, "invalid-username");
       feedbackMessage.style.display = "inline";
       console.error("Error ual actualizar el nombre de usuario:", error);
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   });
+
+  addInputClearListeners([usernameInput], () => { clearErrorMessage(feedbackMessage); });
 
   async function deleteUserProfile() {
     const userId = localStorage.getItem("user");
@@ -192,7 +207,7 @@ export async function setupMyProfile() {
       } else {
         feedbackMessage.style.display = "inline";
         feedbackMessage.style.color = "red";
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.", type: "error" });
+        showErrorMessage(feedbackMessage, "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.");
       }
     } catch (error) {
       hideGlobalSpinner();
@@ -200,7 +215,7 @@ export async function setupMyProfile() {
       feedbackMessage.style.display = "inline";
       feedbackMessage.style.color = "red";
       console.error("Error al eliminar el perfil:", error);
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   }
 
@@ -231,15 +246,15 @@ export async function setupMyProfile() {
       if (res.ok) {
         const { imageUrl } = await res.json();
         profilePicture.src = imageUrl;
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "Imagen de perfil actualizada.", type: "success" });
+        showSuccessMessage(feedbackMessage, "Imagen de perfil actualizada.");
       } else {
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al subir la imagen.", type: "error" });
+        showErrorMessage(feedbackMessage, "Fallo al subir la imagen.");
       }
     } catch (error) {
       hideGlobalSpinner();
       if (profileContainer) profileContainer.style.opacity = 1;
       console.error("Error  al subir la imagen:", error);
-      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   });
 }

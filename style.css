@@ -52,6 +52,9 @@ header {
   align-items: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-bottom: 4px solid #2e5a33;
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
 .logo-link {
@@ -75,7 +78,7 @@ header {
 }
 
 #logo-img {
-  width: 200x;
+  width: 200px;
   height: 60px;
 }
 
@@ -83,12 +86,14 @@ footer {
   background-color: #222;
   color: white;
   text-align: center;
-  padding: 15px;
+  padding: 1.2rem 0.5rem;
   margin-top: auto;
   width: 100%;
   left: 0;
   bottom: 0;
-  position: fixed;
+  position: static;
+  z-index: 100;
+  font-size: 1.1rem;
 }
 
 main {
@@ -98,6 +103,12 @@ main {
   align-items: center;
   padding: 20px;
   flex-grow: 1;
+  padding-bottom: 6.5rem;
+}
+
+/* Hide footer while loading/fade-in */
+body.loading footer {
+  display: none !important;
 }
 
 #login-container {
@@ -178,13 +189,17 @@ main {
 
 #buttons-container {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
   justify-content: center;
-  margin-top: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .event-item {
-  width: 18rem; /* ~288px */
+  width: 100%;
+  max-width: 350px;
+  min-width: 0;
   padding: 1.5rem; /* Espacio interno generoso */
   display: flex;
   flex-direction: column;
@@ -251,8 +266,13 @@ main {
 
 #username-form {
   display: none;
-  gap: 1rem;
-  height: 3rem;
+  flex-direction: row;
+  gap: 0.5rem;
+  width: 100%;
+  height: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
 }
 
 button {
@@ -312,16 +332,12 @@ button:hover {
   text-align: center;
 }
 
-#create-event-form-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+#create-event-form-container,
 #create-event-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  max-width: 100vw;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0.5rem;
 }
 
 #event-details-overlay {
@@ -357,13 +373,16 @@ button:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 30px;
+  padding: 1.2rem 0.7rem 0.7rem 0.7rem;
   border: 1px solid #3a7d44;
   border-radius: 10px;
   height: 50%;
   margin: 20px auto;
   background: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #profile-details-section {
@@ -378,6 +397,8 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: center;
+  justify-content: center;
 }
 
 #email-section {
@@ -440,4 +461,117 @@ button:hover {
 
 .attend-event-btn:hover {
   background: linear-gradient(135deg, #72c14c, #b6e176);
+}
+
+/* --- HAMBURGER NAVBAR FOR TABLET/MOBILE --- */
+
+/* Hide navbar-user buttons and show hamburger on tablet/mobile */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  margin-right: 1rem;
+  z-index: 300;
+}
+.hamburger span {
+  display: block;
+  height: 4px;
+  width: 28px;
+  background: white;
+  margin: 5px 0;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+@media (max-width: 900px) {
+  .navbar-user {
+    display: none;
+    position: absolute;
+    top: 70px;
+    right: 10px;
+    background: #3a7d44;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    z-index: 250;
+    min-width: 160px;
+    width: max-content;
+    align-items: center;
+    justify-content: center;
+  }
+  .navbar-user.open {
+    display: flex;
+  }
+  .hamburger {
+    display: flex;
+  }
+}
+
+/* Hamburger animation when open */
+.hamburger.open span:nth-child(1) {
+  transform: translateY(9px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-9px) rotate(-45deg);
+}
+
+/* Prevent header overlap on open menu */
+@media (max-width: 900px) {
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+}
+
+@media (max-width: 700px) {
+  footer {
+    position: static;
+    padding: 0.7rem 0.2rem;
+    font-size: 1rem;
+  }
+  main {
+    padding-bottom: 2.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  #buttons-container button {
+    font-size: 0.97rem;
+    padding: 0.6em 0.4em;
+  }
+  #username-form {
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: center;
+    justify-content: center;
+  }
+  #update-username-btn, #cancel-update-btn {
+    font-size: 0.97rem;
+    padding: 0.6em 0.4em;
+  }
+  #profile-container {
+    padding: 0.7rem 2vw 2vw 2vw;
+    min-width: 0;
+  }
+  #profile-picture {
+    width: 90px;
+    height: 90px;
+  }
+  .event-item {
+    max-width: 98vw;
+    padding: 1rem 0.5rem;
+  }
+  button, .button-container button {
+    font-size: 0.97rem;
+    padding: 0.6em 0.4em;
+  }
 }

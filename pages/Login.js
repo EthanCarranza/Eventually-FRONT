@@ -1,8 +1,9 @@
 import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
 import { LoginForm } from "../components/LoginForm.js";
-import { FeedbackMessage } from "../components/FeedbackMessage.js";
 import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import { fadeInElement, fadeOutElement, showAndFadeInAfterLoading, focusFirstErrorInput, setInputAriaError, clearInputAriaError, addInputClearListeners } from "../components/uiUtils.js";
+import { showErrorMessage, showSuccessMessage, clearErrorMessage } from "../components/feedbackUtils.js";
 
 export function render() {
   return `
@@ -15,45 +16,50 @@ export function render() {
 }
 
 export function setupLogin() {
+  document.body.classList.add('loading');
   const form = document.querySelector("#login-form");
   const usernameInput = document.querySelector("#username");
   const passwordInput = document.querySelector("#password");
   const loginContainer = document.getElementById("login-container");
+  const errorMessageContainer = "#error-message-container";
 
-  // Oculta el contenido y prepara el fade-in
-  if (loginContainer) {
-    loginContainer.style.opacity = 0;
-    loginContainer.style.transition = "opacity 0.7s";
-  }
-
-  // Muestra el spinner y luego el fade-in al cargar la página
   showGlobalSpinner();
-  setTimeout(() => {
+  showAndFadeInAfterLoading(loginContainer, "block", async () => {
+    await new Promise((res) => setTimeout(res, 400));
     hideGlobalSpinner();
-    if (loginContainer) loginContainer.style.opacity = 1;
-  }, 400); // Pequeño retardo para simular carga inicial
+    document.body.classList.remove('loading');
+  });
 
-  usernameInput.addEventListener("input", clearErrorMessage);
-  passwordInput.addEventListener("input", clearErrorMessage);
+  addInputClearListeners([usernameInput, passwordInput], () => clearErrorMessage(errorMessageContainer));
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (loginContainer) loginContainer.style.opacity = 0.5;
     showGlobalSpinner();
+    [usernameInput, passwordInput].forEach(clearInputAriaError);
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
-    if (!username || !password) {
+    let valid = true;
+    if (!username) {
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+    }
+    if (!password || password.length < 6) {
+      setInputAriaError(passwordInput, "invalid-password");
+      valid = false;
+    }
+    if (!valid) {
+      focusFirstErrorInput(form);
       hideGlobalSpinner();
       if (loginContainer) loginContainer.style.opacity = 1;
       showErrorMessage(
-        "El nombre de usuario y la contraseña no pueden estar vacíos."
+        errorMessageContainer,
+        !username && !password
+          ? "El nombre de usuario y la contraseña no pueden estar vacíos."
+          : !username
+          ? "El nombre de usuario no puede estar vacío."
+          : "La contraseña es demasiado corta."
       );
-      return;
-    }
-    if (password.length < 6) {
-      hideGlobalSpinner();
-      if (loginContainer) loginContainer.style.opacity = 1;
-      showErrorMessage("La contraseña es demasiado corta.");
       return;
     }
     try {
@@ -62,22 +68,10 @@ export function setupLogin() {
       hideGlobalSpinner();
       if (loginContainer) loginContainer.style.opacity = 1;
       console.error("Error al iniciar sesión:", error);
-      showErrorMessage("Ha ocurrido un error. Por favor, inténtalo más tarde.");
+      showErrorMessage(errorMessageContainer, "Ha ocurrido un error. Por favor, inténtalo más tarde.");
     }
   });
 }
-
-const showErrorMessage = (message) => {
-  const existingError = document.querySelector("#error-message");
-  if (existingError) {
-    existingError.remove();
-  }
-  document.querySelector("#error-message-container").innerHTML = FeedbackMessage({ message, type: "error" });
-};
-
-const clearErrorMessage = () => {
-  document.querySelector("#error-message-container").innerHTML = "";
-};
 
 export const submit = async (username, password, loginContainer) => {
   clearErrorMessage();
