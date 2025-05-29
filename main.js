@@ -50,6 +50,31 @@ document.addEventListener("DOMContentLoaded", () => {
     loadComponent("home");
   });
 
+  const hamburger = document.getElementById("hamburger-menu");
+  const navbarUser = document.querySelector(".navbar-user");
+
+  if (hamburger && navbarUser) {
+    hamburger.addEventListener("click", () => {
+      hamburger.classList.toggle("open");
+      navbarUser.classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (
+        navbarUser.classList.contains("open") &&
+        !navbarUser.contains(e.target) &&
+        !hamburger.contains(e.target)
+      ) {
+        hamburger.classList.remove("open");
+        navbarUser.classList.remove("open");
+      }
+    });
+    hamburger.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        hamburger.click();
+      }
+    });
+  }
+
   updateLogoutLinkVisibility();
 });
 

@@ -1,5 +1,10 @@
 import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
+import { UsernameForm } from "../components/UsernameForm.js";
+import { FeedbackMessage } from "../components/FeedbackMessage.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import { fadeInElement, showAndFadeInAfterLoading, focusFirstErrorInput, setInputAriaError, clearInputAriaError, addInputClearListeners } from "../components/uiUtils.js";
+import { showErrorMessage, showSuccessMessage, clearErrorMessage } from "../components/feedbackUtils.js";
 
 export function render() {
   return `
@@ -10,28 +15,25 @@ export function render() {
         <input type="file" id="profile-image-upload" accept="image/*" style="display:none;" />
         <button id="upload-image-btn">Subir Imagen</button>
       </div>
-      
       <div id="profile-details-section">
         <p id="email-section">
           <strong>Correo electrónico:</strong> <span id="user-email"></span>
         </p>
         <div id="username-section"> 
-        <p><strong>Nombre de usuario:</strong> 
-        <span id="user-name"></span> <div id="edit-username-div">
-        <button id="edit-username-btn">Editar</button></p></div>
-        <button id="delete-profile-btn">Eliminar mi perfil</button>
-        <form id="username-form">
-          <input type="text" id="username-input" value="" />
-          <button type="submit" id="update-username-btn">Actualizar nombre de usuario</button>
-          <button type="button" id="cancel-update-btn">Cancelar</button>
-        </form>
-        <p id="feedback-message"></p></div>
+          <p><strong>Nombre de usuario:</strong> 
+          <span id="user-name"></span> <div id="edit-username-div">
+          <button id="edit-username-btn">Editar</button></p></div>
+          <button id="delete-profile-btn">Eliminar mi perfil</button>
+          ${UsernameForm({ username: "" })}
+          <p id="feedback-message"></p>
+        </div>
       </div>
     </div>
   `;
 }
 
 export async function setupMyProfile() {
+  document.body.classList.add('loading');
   const usernameForm = document.getElementById("username-form");
   const usernameInput = document.getElementById("username-input");
   const feedbackMessage = document.getElementById("feedback-message");
@@ -43,36 +45,41 @@ export async function setupMyProfile() {
   const editUsernameBtn = document.getElementById("edit-username-btn");
   const deleteUserBtn = document.getElementById("delete-profile-btn");
   const cancelUpdateBtn = document.getElementById("cancel-update-btn");
-
-  const userId = localStorage.getItem("user");
-  if (!userId) {
-    console.error("No se encontró el usuario en el localStorage");
-    feedbackMessage.textContent = "Fallo al cargar el perfil del usuario.";
-    feedbackMessage.style.color = "red";
-    return;
-  }
-
-  try {
-    const res = await apiFetch(`/users/${userId}`, {
-      method: "GET",
-    });
-
-    if (res) {
-      const { userName, email, image } = await res.json();
-      userNameSpan.textContent = userName;
-      userEmailSpan.textContent = email;
-      usernameInput.value = userName;
-      profilePicture.src = image;
-    } else {
-      feedbackMessage.textContent = "Fallo al cargar el perfil del usuario.";
-      feedbackMessage.style.color = "red";
+  const profileContainer = document.getElementById("profile-container");
+  showGlobalSpinner();
+  await showAndFadeInAfterLoading(profileContainer, "flex", async () => {
+    const userId = localStorage.getItem("user");
+    if (!userId) {
+      hideGlobalSpinner();
+      if (profileContainer) {
+        profileContainer.style.display = "flex";
+        profileContainer.style.opacity = 1;
+      }
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
+      return;
     }
-  } catch (error) {
-    console.error("Error loading user data:", error);
-    feedbackMessage.textContent =
-      "Ocurrió un error. Por favor, inténtalo de nuevo.";
-    feedbackMessage.style.color = "red";
-  }
+    try {
+      const res = await apiFetch(`/users/${userId}`, { method: "GET" });
+      if (res) {
+        const { userName, email, image } = await res.json();
+        userNameSpan.textContent = userName;
+        userEmailSpan.textContent = email;
+        usernameInput.value = userName;
+        profilePicture.src = image;
+      } else {
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
+      }
+      hideGlobalSpinner();
+    } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) {
+        profileContainer.style.display = "flex";
+        profileContainer.style.opacity = 1;
+      }
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+    }
+    document.body.classList.remove('loading');
+  });
 
   editUsernameBtn.addEventListener("click", () => {
     userNameSpan.style.display = "none";
@@ -80,6 +87,7 @@ export async function setupMyProfile() {
     deleteUserBtn.style.display = "none";
     usernameForm.style.display = "flex";
     feedbackMessage.style.display = "none";
+    clearErrorMessage(feedbackMessage);
   });
 
   deleteUserBtn.addEventListener("click", () => {
@@ -97,40 +105,48 @@ export async function setupMyProfile() {
     deleteUserBtn.style.display = "inline";
     usernameForm.style.display = "none";
     feedbackMessage.style.display = "none";
+    clearErrorMessage(feedbackMessage);
   });
 
   usernameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (profileContainer) profileContainer.style.opacity = 0.5;
+    showGlobalSpinner();
+    clearInputAriaError(usernameInput);
     const newUsername = usernameInput.value.trim();
     feedbackMessage.style.display = "inline";
     feedbackMessage.style.color = "red";
+    let valid = true;
     if (!newUsername) {
-      feedbackMessage.textContent =
-        "El nombre de usuario no puede estar vacío.";
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario no puede estar vacío.");
     } else if (userNameSpan.textContent.trim() === newUsername) {
-      feedbackMessage.textContent =
-        "El nombre de usuario nuevo es el mismo que el antiguo.";
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario nuevo es el mismo que el antiguo.");
     } else if (newUsername.trim().length < 3) {
-      feedbackMessage.textContent =
-        "El nombre de usuario debe tener al menos 3 caracteres";
-      return;
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario debe tener al menos 3 caracteres");
     } else if (!/\d/.test(newUsername)) {
-      feedbackMessage.textContent =
-        "El nombre de usuario debe tener al menos un número.";
+      setInputAriaError(usernameInput, "invalid-username");
+      valid = false;
+      showErrorMessage(feedbackMessage, "El nombre de usuario debe tener al menos un número.");
+    }
+    if (!valid) {
+      focusFirstErrorInput(usernameForm);
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       return;
     }
-
     const token = localStorage.getItem("token");
-
     if (!token) {
       console.error(
         "No se encontró el token, el usuario no esta autentificado."
       );
       return;
     }
-
     try {
       const res = await apiFetch(`/users/${userId}`, {
         method: "PUT",
@@ -139,45 +155,51 @@ export async function setupMyProfile() {
         },
         body: JSON.stringify({ userName: newUsername }),
       });
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       if (res) {
-        feedbackMessage.textContent =
-          "El nombre de usuario se actualizó correctamente.";
-        feedbackMessage.style.color = "green";
+        clearInputAriaError(usernameInput);
+        showSuccessMessage(feedbackMessage, "El nombre de usuario se actualizó correctamente.");
         userNameSpan.textContent = newUsername;
         usernameForm.style.display = "none";
         userNameSpan.style.display = "inline";
         editUsernameBtn.style.display = "inline";
         deleteUserBtn.style.display = "inline";
       } else {
-        feedbackMessage.textContent = "El nombre de usuario ya existe.";
-        feedbackMessage.style.color = "red";
+        setInputAriaError(usernameInput, "invalid-username");
+        showErrorMessage(feedbackMessage, "El nombre de usuario ya existe.");
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
+      setInputAriaError(usernameInput, "invalid-username");
       feedbackMessage.style.display = "inline";
       console.error("Error ual actualizar el nombre de usuario:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   });
+
+  addInputClearListeners([usernameInput], () => { clearErrorMessage(feedbackMessage); });
 
   async function deleteUserProfile() {
     const userId = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-
     if (!userId || !token) {
       console.error("Usuario no autenticado o ID no encontrado.");
       return;
     }
-
     try {
+      showGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 0.5;
       const res = await apiFetch(`/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       if (res.ok) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -185,15 +207,15 @@ export async function setupMyProfile() {
       } else {
         feedbackMessage.style.display = "inline";
         feedbackMessage.style.color = "red";
-        feedbackMessage.textContent =
-          "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.";
+        showErrorMessage(feedbackMessage, "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.");
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       feedbackMessage.style.display = "inline";
       feedbackMessage.style.color = "red";
       console.error("Error al eliminar el perfil:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   }
 
@@ -204,13 +226,13 @@ export async function setupMyProfile() {
   imageUploadInput.addEventListener("change", async () => {
     const file = imageUploadInput.files[0];
     if (!file) return;
+    if (profileContainer) profileContainer.style.opacity = 0.5;
+    showGlobalSpinner();
     feedbackMessage.style.display = "inline";
-    feedbackMessage.textContent = "Procesando registro...";
-    feedbackMessage.style.color = "blue";
+    feedbackMessage.innerHTML = FeedbackMessage({ message: "Procesando registro...", type: "info" });
     const formData = new FormData();
     formData.append("img", file);
     const token = localStorage.getItem("token");
-
     try {
       const res = await apiFetch(`/users/profileImage/${userId}`, {
         method: "PUT",
@@ -219,20 +241,20 @@ export async function setupMyProfile() {
           Authorization: `Bearer ${token}`,
         },
       });
-
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       if (res.ok) {
         const { imageUrl } = await res.json();
         profilePicture.src = imageUrl;
-        feedbackMessage.textContent = "Imagen de perfil actualizada.";
-        feedbackMessage.style.color = "green";
+        showSuccessMessage(feedbackMessage, "Imagen de perfil actualizada.");
       } else {
-        feedbackMessage.textContent = "Fallo al subir la imagen.";
-        feedbackMessage.style.color = "red";
+        showErrorMessage(feedbackMessage, "Fallo al subir la imagen.");
       }
     } catch (error) {
+      hideGlobalSpinner();
+      if (profileContainer) profileContainer.style.opacity = 1;
       console.error("Error  al subir la imagen:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      showErrorMessage(feedbackMessage, "Ocurrió un error. Por favor, inténtalo de nuevo.");
     }
   });
 }
