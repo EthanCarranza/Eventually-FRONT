@@ -1,30 +1,18 @@
 import { submit } from "./Login.js";
 import { apiFetch } from "../services/apiFetch.js";
+import { RegisterForm } from "../components/RegisterForm.js";
+import { FeedbackMessage } from "../components/FeedbackMessage.js";
 
 export function render() {
   return `
     <div id="register-container">
       <h2>Registro</h2>
-      <form id="register-form">
-        <label for="username">Nombre de usuario:</label>
-        <input type="text" id="username" name="username" />
-        
-        <label for="email">Correo electrónico:</label>
-        <input type="email" id="email" name="email" />
-  
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password" name="password" />
-        
-        <label for="confirm-password">Confirmar contraseña:</label>
-        <input type="password" id="confirm-password" name="confirm-password" />
-  
-        <button type="submit">Registrarse</button>
-      </form>
+      ${RegisterForm()}
       <div id="error-message-container"></div>
       <div id="requirements-container" style="display: none"></div>
       <div id="required-acctions-container" style="display: none"> <p id="req-acctions-title"><strong>Acciones requeridas:</strong></p></div>
-      </div>
-    `;
+    </div>
+  `;
 }
 
 export function setupRegister() {
@@ -323,29 +311,18 @@ const submitRegister = async (username, email, password) => {
 
 const showErrorMessage = (message) => {
   clearErrorMessage();
-  const errorMessage = document.createElement("p");
-  errorMessage.id = "error-message";
-  errorMessage.style.color = "red";
-  errorMessage.textContent = message;
-  document.querySelector("#error-message-container").appendChild(errorMessage);
+  document.querySelector("#error-message-container").innerHTML = FeedbackMessage({ message, type: "error" });
 };
 
 const clearErrorMessage = () => {
-  const existingError = document.querySelector("#error-message");
-  if (existingError) {
-    existingError.remove();
-  }
+  document.querySelector("#error-message-container").innerHTML = "";
 };
 
 const showSuccessMessage = (message) => {
-  const successMessage = document.createElement("p");
-  successMessage.style.color = "green";
-  successMessage.textContent = message;
-  document
-    .querySelector("#error-message-container")
-    .appendChild(successMessage);
-
+  const successMessage = FeedbackMessage({ message, type: "success" });
+  const container = document.querySelector("#error-message-container");
+  container.innerHTML += successMessage;
   setTimeout(() => {
-    successMessage.remove();
+    container.innerHTML = "";
   }, 3000);
 };

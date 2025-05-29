@@ -1,19 +1,15 @@
 import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
+import { LoginForm } from "../components/LoginForm.js";
+import { FeedbackMessage } from "../components/FeedbackMessage.js";
+
 export function render() {
   return `
-
-  <div id="login-container">
-  <h2>Iniciar Sesión</h2>
-    <form id="login-form">
-      <label for="username">Nombre de usuario:</label>
-      <input type="text" id="username" name="username" />
-      <label for="password">Contraseña:</label>
-      <input type="password" id="password" name="password" />
-      <button type="submit">Iniciar Sesión</button>
-    </form>
-    <div id="error-message-container"></div></div>
-    
+    <div id="login-container">
+      <h2>Iniciar Sesión</h2>
+      ${LoginForm()}
+      <div id="error-message-container"></div>
+    </div>
   `;
 }
 
@@ -57,19 +53,11 @@ const showErrorMessage = (message) => {
   if (existingError) {
     existingError.remove();
   }
-
-  const errorMessage = document.createElement("p");
-  errorMessage.id = "error-message";
-  errorMessage.style.color = "red";
-  errorMessage.textContent = message;
-  document.querySelector("#error-message-container").appendChild(errorMessage);
+  document.querySelector("#error-message-container").innerHTML = FeedbackMessage({ message, type: "error" });
 };
 
 const clearErrorMessage = () => {
-  const existingError = document.querySelector("#error-message");
-  if (existingError) {
-    existingError.remove();
-  }
+  document.querySelector("#error-message-container").innerHTML = "";
 };
 
 export const submit = async (username, password) => {

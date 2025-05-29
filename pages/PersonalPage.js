@@ -1,5 +1,7 @@
 import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
+import { UsernameForm } from "../components/UsernameForm.js";
+import { FeedbackMessage } from "../components/FeedbackMessage.js";
 
 export function render() {
   return `
@@ -10,22 +12,18 @@ export function render() {
         <input type="file" id="profile-image-upload" accept="image/*" style="display:none;" />
         <button id="upload-image-btn">Subir Imagen</button>
       </div>
-      
       <div id="profile-details-section">
         <p id="email-section">
           <strong>Correo electrónico:</strong> <span id="user-email"></span>
         </p>
         <div id="username-section"> 
-        <p><strong>Nombre de usuario:</strong> 
-        <span id="user-name"></span> <div id="edit-username-div">
-        <button id="edit-username-btn">Editar</button></p></div>
-        <button id="delete-profile-btn">Eliminar mi perfil</button>
-        <form id="username-form">
-          <input type="text" id="username-input" value="" />
-          <button type="submit" id="update-username-btn">Actualizar nombre de usuario</button>
-          <button type="button" id="cancel-update-btn">Cancelar</button>
-        </form>
-        <p id="feedback-message"></p></div>
+          <p><strong>Nombre de usuario:</strong> 
+          <span id="user-name"></span> <div id="edit-username-div">
+          <button id="edit-username-btn">Editar</button></p></div>
+          <button id="delete-profile-btn">Eliminar mi perfil</button>
+          ${UsernameForm({ username: "" })}
+          <p id="feedback-message"></p>
+        </div>
       </div>
     </div>
   `;
@@ -47,8 +45,7 @@ export async function setupMyProfile() {
   const userId = localStorage.getItem("user");
   if (!userId) {
     console.error("No se encontró el usuario en el localStorage");
-    feedbackMessage.textContent = "Fallo al cargar el perfil del usuario.";
-    feedbackMessage.style.color = "red";
+    feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
     return;
   }
 
@@ -64,14 +61,11 @@ export async function setupMyProfile() {
       usernameInput.value = userName;
       profilePicture.src = image;
     } else {
-      feedbackMessage.textContent = "Fallo al cargar el perfil del usuario.";
-      feedbackMessage.style.color = "red";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al cargar el perfil del usuario.", type: "error" });
     }
   } catch (error) {
     console.error("Error loading user data:", error);
-    feedbackMessage.textContent =
-      "Ocurrió un error. Por favor, inténtalo de nuevo.";
-    feedbackMessage.style.color = "red";
+    feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
   }
 
   editUsernameBtn.addEventListener("click", () => {
@@ -105,20 +99,16 @@ export async function setupMyProfile() {
     feedbackMessage.style.display = "inline";
     feedbackMessage.style.color = "red";
     if (!newUsername) {
-      feedbackMessage.textContent =
-        "El nombre de usuario no puede estar vacío.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario no puede estar vacío.", type: "error" });
       return;
     } else if (userNameSpan.textContent.trim() === newUsername) {
-      feedbackMessage.textContent =
-        "El nombre de usuario nuevo es el mismo que el antiguo.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario nuevo es el mismo que el antiguo.", type: "error" });
       return;
     } else if (newUsername.trim().length < 3) {
-      feedbackMessage.textContent =
-        "El nombre de usuario debe tener al menos 3 caracteres";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario debe tener al menos 3 caracteres", type: "error" });
       return;
     } else if (!/\d/.test(newUsername)) {
-      feedbackMessage.textContent =
-        "El nombre de usuario debe tener al menos un número.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario debe tener al menos un número.", type: "error" });
       return;
     }
 
@@ -141,23 +131,19 @@ export async function setupMyProfile() {
       });
       feedbackMessage.style.display = "inline";
       if (res) {
-        feedbackMessage.textContent =
-          "El nombre de usuario se actualizó correctamente.";
-        feedbackMessage.style.color = "green";
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario se actualizó correctamente.", type: "success" });
         userNameSpan.textContent = newUsername;
         usernameForm.style.display = "none";
         userNameSpan.style.display = "inline";
         editUsernameBtn.style.display = "inline";
         deleteUserBtn.style.display = "inline";
       } else {
-        feedbackMessage.textContent = "El nombre de usuario ya existe.";
-        feedbackMessage.style.color = "red";
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "El nombre de usuario ya existe.", type: "error" });
       }
     } catch (error) {
       feedbackMessage.style.display = "inline";
       console.error("Error ual actualizar el nombre de usuario:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
     }
   });
 
@@ -185,15 +171,13 @@ export async function setupMyProfile() {
       } else {
         feedbackMessage.style.display = "inline";
         feedbackMessage.style.color = "red";
-        feedbackMessage.textContent =
-          "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.";
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "Hubo un error al eliminar tu perfil. Por favor, inténtalo de nuevo.", type: "error" });
       }
     } catch (error) {
       feedbackMessage.style.display = "inline";
       feedbackMessage.style.color = "red";
       console.error("Error al eliminar el perfil:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
     }
   }
 
@@ -205,8 +189,7 @@ export async function setupMyProfile() {
     const file = imageUploadInput.files[0];
     if (!file) return;
     feedbackMessage.style.display = "inline";
-    feedbackMessage.textContent = "Procesando registro...";
-    feedbackMessage.style.color = "blue";
+    feedbackMessage.innerHTML = FeedbackMessage({ message: "Procesando registro...", type: "info" });
     const formData = new FormData();
     formData.append("img", file);
     const token = localStorage.getItem("token");
@@ -223,16 +206,13 @@ export async function setupMyProfile() {
       if (res.ok) {
         const { imageUrl } = await res.json();
         profilePicture.src = imageUrl;
-        feedbackMessage.textContent = "Imagen de perfil actualizada.";
-        feedbackMessage.style.color = "green";
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "Imagen de perfil actualizada.", type: "success" });
       } else {
-        feedbackMessage.textContent = "Fallo al subir la imagen.";
-        feedbackMessage.style.color = "red";
+        feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al subir la imagen.", type: "error" });
       }
     } catch (error) {
       console.error("Error  al subir la imagen:", error);
-      feedbackMessage.textContent =
-        "Ocurrió un error. Por favor, inténtalo de nuevo.";
+      feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
     }
   });
 }
