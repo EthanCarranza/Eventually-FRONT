@@ -3,7 +3,10 @@ import { EventCard } from "../components/EventCard.js";
 import { EventForm } from "../components/EventForm.js";
 import { EventDetailsModal } from "../components/EventDetailsModal.js";
 import { FeedbackMessage } from "../components/FeedbackMessage.js";
-import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import {
+  showGlobalSpinner,
+  hideGlobalSpinner,
+} from "../components/GlobalSpinner.js";
 
 export function render() {
   return `
@@ -22,7 +25,7 @@ export function render() {
 }
 
 export async function setupEvents() {
-  document.body.classList.add('loading');
+  document.body.classList.add("loading");
   const eventsListContainer = document.getElementById("events-list");
   const createEventForm = document.getElementById("create-event-form");
   const createEventButton = document.getElementById("create-event-button");
@@ -41,17 +44,17 @@ export async function setupEvents() {
   }
 
   showGlobalSpinner();
-  const eventsMain = document.querySelector('.events-main');
+  const eventsMain = document.querySelector(".events-main");
   if (eventsMain) {
     eventsMain.style.opacity = 0;
-    eventsMain.style.transition = 'opacity 0.7s';
+    eventsMain.style.transition = "opacity 0.7s";
   }
   let fadeInApplied = false;
   const fadeIn = () => {
     hideGlobalSpinner();
     if (!fadeInApplied) {
       if (eventsMain) eventsMain.style.opacity = 1;
-      document.body.classList.remove('loading');
+      document.body.classList.remove("loading");
       fadeInApplied = true;
     }
   };
@@ -82,7 +85,7 @@ export async function setupEvents() {
                 event,
                 isCreator,
                 isAttending,
-                token
+                token,
               });
             })
             .join("");
@@ -228,14 +231,20 @@ export async function setupEvents() {
       const data = await res.json();
 
       if (res.ok && data.message !== "No changes") {
-        errorMessage.innerHTML = FeedbackMessage({ message: "¡Te has unido al evento!", type: "success" });
+        errorMessage.innerHTML = FeedbackMessage({
+          message: "¡Te has unido al evento!",
+          type: "success",
+        });
         setupEvents();
       } else {
         throw new Error("Fallo al unirse al evento.");
       }
     } catch (error) {
       console.error("Fallo al unirse al evento:", error);
-      errorMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+      errorMessage.innerHTML = FeedbackMessage({
+        message: "Ocurrió un error. Por favor, inténtalo de nuevo.",
+        type: "error",
+      });
     }
   }
 
@@ -257,14 +266,20 @@ export async function setupEvents() {
       const data = await res.json();
 
       if (res.ok && data.message !== "No changes") {
-        errorMessage.innerHTML = FeedbackMessage({ message: "Has cancelado tu participación en el evento.", type: "info" });
+        errorMessage.innerHTML = FeedbackMessage({
+          message: "Has cancelado tu participación en el evento.",
+          type: "info",
+        });
         setupEvents();
       } else {
         throw new Error("Fallo al cancelar la participación.");
       }
     } catch (error) {
       console.error("Error al cancelar participación:", error);
-      errorMessage.innerHTML = FeedbackMessage({ message: "Error al cancelar. Inténtalo de nuevo.", type: "error" });
+      errorMessage.innerHTML = FeedbackMessage({
+        message: "Error al cancelar. Inténtalo de nuevo.",
+        type: "error",
+      });
     }
   }
 
@@ -291,14 +306,20 @@ export async function setupEvents() {
       const data = await res.json();
 
       if (res.ok && data.message !== "No changes") {
-        errorMessage.innerHTML = FeedbackMessage({ message: "Evento eliminado exitosamente.", type: "info" });
+        errorMessage.innerHTML = FeedbackMessage({
+          message: "Evento eliminado exitosamente.",
+          type: "info",
+        });
         setupEvents();
       } else {
         throw new Error("Fallo al eliminar el evento.");
       }
     } catch (error) {
       console.error("Error al eliminar el evento:", error);
-      errorMessage.innerHTML = FeedbackMessage({ message: "Hubo un error al eliminar el evento. Inténtalo de nuevo.", type: "error" });
+      errorMessage.innerHTML = FeedbackMessage({
+        message: "Hubo un error al eliminar el evento. Inténtalo de nuevo.",
+        type: "error",
+      });
     }
   }
 }
@@ -344,12 +365,18 @@ export function setupCreateEvent() {
       const image = imageUploadInput.files[0];
 
       if (image && image.size > maxFileSize) {
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "El tamaño de la imagen debe ser menor a 5MB.", type: "error" });
+        feedbackMessage.innerHTML = FeedbackMessage({
+          message: "El tamaño de la imagen debe ser menor a 5MB.",
+          type: "error",
+        });
         return;
       }
 
       if (!title || !description || !date || !location) {
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "Todos los campos son requeridos.", type: "error" });
+        feedbackMessage.innerHTML = FeedbackMessage({
+          message: "Todos los campos son requeridos.",
+          type: "error",
+        });
         return;
       }
 
@@ -379,12 +406,18 @@ export function setupCreateEvent() {
           setupEvents();
         } else {
           formContainer.style.display = "block";
-          feedbackMessage.innerHTML = FeedbackMessage({ message: "Fallo al crear evento.", type: "error" });
+          feedbackMessage.innerHTML = FeedbackMessage({
+            message: "Fallo al crear evento.",
+            type: "error",
+          });
         }
       } catch (error) {
         formContainer.style.display = "block";
         console.error("Error al crear el evento:", error);
-        feedbackMessage.innerHTML = FeedbackMessage({ message: "Ocurrió un error. Por favor, inténtalo de nuevo.", type: "error" });
+        feedbackMessage.innerHTML = FeedbackMessage({
+          message: "Ocurrió un error. Por favor, inténtalo de nuevo.",
+          type: "error",
+        });
       } finally {
         loadingMessage.style.display = "none";
         createEventForm.reset();

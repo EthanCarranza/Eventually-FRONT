@@ -1,17 +1,17 @@
 let spinnerInjected = false;
 
 export function showGlobalSpinner() {
-  const prevSpinner = document.getElementById('global-spinner');
+  const prevSpinner = document.getElementById("global-spinner");
   if (prevSpinner) prevSpinner.remove();
 
-  const globalSpinner = document.createElement('div');
-  globalSpinner.id = 'global-spinner';
+  const globalSpinner = document.createElement("div");
+  globalSpinner.id = "global-spinner";
   globalSpinner.innerHTML = '<span class="spinner"></span>';
   document.body.appendChild(globalSpinner);
 
-  if (!spinnerInjected && !document.getElementById('spinner-style')) {
-    const style = document.createElement('style');
-    style.id = 'spinner-style';
+  if (!spinnerInjected && !document.getElementById("spinner-style")) {
+    const style = document.createElement("style");
+    style.id = "spinner-style";
     style.innerHTML = `
       #global-spinner {
         width: 100vw;
@@ -46,6 +46,6 @@ export function showGlobalSpinner() {
 }
 
 export function hideGlobalSpinner() {
-  const spinner = document.getElementById('global-spinner');
+  const spinner = document.getElementById("global-spinner");
   if (spinner) spinner.remove();
 }
