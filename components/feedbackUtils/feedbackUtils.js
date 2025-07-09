@@ -1,4 +1,4 @@
-import { FeedbackMessage } from "./FeedbackMessage.js";
+import { FeedbackMessage } from "../FeedbackMessage/FeedbackMessage.js";
 
 export function showErrorMessage(containerSelector, message) {
   clearErrorMessage(containerSelector);
@@ -10,7 +10,11 @@ export function showErrorMessage(containerSelector, message) {
     container.innerHTML = FeedbackMessage({ message, type: "error" });
 }
 
-export function showSuccessMessage(containerSelector, message, duration = 2000) {
+export function showSuccessMessage(
+  containerSelector,
+  message,
+  duration = 2000
+) {
   const container =
     typeof containerSelector === "string"
       ? document.querySelector(containerSelector)
