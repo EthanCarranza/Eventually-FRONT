@@ -1,24 +1,9 @@
 import { apiFetch } from "../services/apiFetch";
 import { loadComponent } from "../main";
-import { LoginForm } from "../components/LoginForm/LoginForm.js";
-import {
-  showGlobalSpinner,
-  hideGlobalSpinner,
-} from "../components/GlobalSpinner/GlobalSpinner.js";
-import {
-  fadeInElement,
-  fadeOutElement,
-  showAndFadeInAfterLoading,
-  focusFirstErrorInput,
-  setInputAriaError,
-  clearInputAriaError,
-  addInputClearListeners,
-} from "../components/uiUtils/uiUtils.js";
-import {
-  showErrorMessage,
-  showSuccessMessage,
-  clearErrorMessage,
-} from "../components/feedbackUtils/feedbackUtils.js";
+import { LoginForm } from "../components/LoginForm.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import { fadeInElement, fadeOutElement, showAndFadeInAfterLoading, focusFirstErrorInput, setInputAriaError, clearInputAriaError, addInputClearListeners } from "../components/uiUtils.js";
+import { showErrorMessage, showSuccessMessage, clearErrorMessage } from "../components/feedbackUtils.js";
 
 export function render() {
   return `
@@ -31,7 +16,7 @@ export function render() {
 }
 
 export function setupLogin() {
-  document.body.classList.add("loading");
+  document.body.classList.add('loading');
   const form = document.querySelector("#login-form");
   const usernameInput = document.querySelector("#username");
   const passwordInput = document.querySelector("#password");
@@ -42,12 +27,10 @@ export function setupLogin() {
   showAndFadeInAfterLoading(loginContainer, "block", async () => {
     await new Promise((res) => setTimeout(res, 400));
     hideGlobalSpinner();
-    document.body.classList.remove("loading");
+    document.body.classList.remove('loading');
   });
 
-  addInputClearListeners([usernameInput, passwordInput], () =>
-    clearErrorMessage(errorMessageContainer)
-  );
+  addInputClearListeners([usernameInput, passwordInput], () => clearErrorMessage(errorMessageContainer));
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -85,10 +68,7 @@ export function setupLogin() {
       hideGlobalSpinner();
       if (loginContainer) loginContainer.style.opacity = 1;
       console.error("Error al iniciar sesión:", error);
-      showErrorMessage(
-        errorMessageContainer,
-        "Ha ocurrido un error. Por favor, inténtalo más tarde."
-      );
+      showErrorMessage(errorMessageContainer, "Ha ocurrido un error. Por favor, inténtalo más tarde.");
     }
   });
 }

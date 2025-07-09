@@ -1,23 +1,9 @@
-import { submit } from "../Login/Login.js";
+import { submit } from "./Login.js";
 import { apiFetch } from "../services/apiFetch.js";
-import { RegisterForm } from "../components/RegisterForm/RegisterForm.js";
-import {
-  showGlobalSpinner,
-  hideGlobalSpinner,
-} from "../components/GlobalSpinner/GlobalSpinner.js";
-import {
-  fadeInElement,
-  showAndFadeInAfterLoading,
-  focusFirstErrorInput,
-  setInputAriaError,
-  clearInputAriaError,
-  addInputClearListeners,
-} from "../components/uiUtils/uiUtils.js";
-import {
-  showErrorMessage,
-  showSuccessMessage,
-  clearErrorMessage,
-} from "../components/feedbackUtils/feedbackUtils.js";
+import { RegisterForm } from "../components/RegisterForm.js";
+import { showGlobalSpinner, hideGlobalSpinner } from "../components/GlobalSpinner.js";
+import { fadeInElement, showAndFadeInAfterLoading, focusFirstErrorInput, setInputAriaError, clearInputAriaError, addInputClearListeners } from "../components/uiUtils.js";
+import { showErrorMessage, showSuccessMessage, clearErrorMessage } from "../components/feedbackUtils.js";
 
 export function render() {
   return `
@@ -32,7 +18,7 @@ export function render() {
 }
 
 export function setupRegister() {
-  document.body.classList.add("loading");
+  document.body.classList.add('loading');
   const form = document.querySelector("#register-form");
   const registerContainer = document.getElementById("register-container");
   const errorMessageContainer = "#error-message-container";
@@ -40,7 +26,7 @@ export function setupRegister() {
   showAndFadeInAfterLoading(registerContainer, "block", async () => {
     await new Promise((res) => setTimeout(res, 400));
     hideGlobalSpinner();
-    document.body.classList.remove("loading");
+    document.body.classList.remove('loading');
   });
 
   let isUsernameInput = false;
@@ -83,10 +69,7 @@ export function setupRegister() {
     if (registerContainer) registerContainer.style.opacity = 0.5;
     showGlobalSpinner();
 
-    addInputClearListeners(
-      [usernameInput, emailInput, passwordInput, confirmPasswordInput],
-      () => clearErrorMessage(errorMessageContainer)
-    );
+    addInputClearListeners([usernameInput, emailInput, passwordInput, confirmPasswordInput], () => clearErrorMessage(errorMessageContainer));
 
     const username = usernameInput.value.trim();
     const email = emailInput.value.trim();
@@ -100,12 +83,9 @@ export function setupRegister() {
     if (!validUsername) setInputAriaError(usernameInput, "invalid-username");
     if (!validEmail) setInputAriaError(emailInput, "invalid-email");
     if (!validPassword) setInputAriaError(passwordInput, "invalid-password");
-    if (!validConfirmPassword)
-      setInputAriaError(confirmPasswordInput, "invalid-confirm-password");
+    if (!validConfirmPassword) setInputAriaError(confirmPasswordInput, "invalid-confirm-password");
 
-    if (
-      !(validUsername && validEmail && validPassword && validConfirmPassword)
-    ) {
+    if (!(validUsername && validEmail && validPassword && validConfirmPassword)) {
       focusFirstErrorInput(form);
       hideGlobalSpinner();
       if (registerContainer) registerContainer.style.opacity = 1;
@@ -117,10 +97,7 @@ export function setupRegister() {
       hideGlobalSpinner();
       if (registerContainer) registerContainer.style.opacity = 1;
       console.error("Error al registrar:", error);
-      showErrorMessage(
-        errorMessageContainer,
-        "Ocurrió un error. Por favor, inténtalo más tarde."
-      );
+      showErrorMessage(errorMessageContainer, "Ocurrió un error. Por favor, inténtalo más tarde.");
     }
   });
 
@@ -326,22 +303,13 @@ const submitRegister = async (username, email, password, registerContainer) => {
     if (registerContainer) registerContainer.style.opacity = 1;
     if (res.status === 409) {
       if (res.json == "Usuario ya existente") {
-        showErrorMessage(
-          errorMessageContainer,
-          "Ya existe un usuario con este nombre único. Por favor, introduce otro username."
-        );
+        showErrorMessage(errorMessageContainer, "Ya existe un usuario con este nombre único. Por favor, introduce otro username.");
       } else {
-        showErrorMessage(
-          errorMessageContainer,
-          "Ya existe un usuario con este correo electrónico. Por favor, introduce otro correo."
-        );
+        showErrorMessage(errorMessageContainer, "Ya existe un usuario con este correo electrónico. Por favor, introduce otro correo.");
       }
       return;
     } else if (res.status !== 201) {
-      showErrorMessage(
-        errorMessageContainer,
-        "Hubo un error al intentar registrarse. Por favor, inténtalo más tarde."
-      );
+      showErrorMessage(errorMessageContainer, "Hubo un error al intentar registrarse. Por favor, inténtalo más tarde.");
       return;
     }
     if (registerContainer) {
@@ -358,9 +326,6 @@ const submitRegister = async (username, email, password, registerContainer) => {
     loadingMessage.remove();
     hideGlobalSpinner();
     if (registerContainer) registerContainer.style.opacity = 1;
-    showErrorMessage(
-      errorMessageContainer,
-      "Hubo un error al intentar registrarse. Por favor, inténtalo más tarde."
-    );
+    showErrorMessage(errorMessageContainer, "Hubo un error al intentar registrarse. Por favor, inténtalo más tarde.");
   }
 };

@@ -89,7 +89,7 @@ export const loadComponent = (component) => {
       window.location.href = "/";
       break;
     case "events":
-      import("./pages/Events/Events.js")
+      import("./pages/Events.js")
         .then((module) => {
           changeMainContent(module.render());
           module.setupEvents();
@@ -99,7 +99,7 @@ export const loadComponent = (component) => {
         });
       break;
     case "login":
-      import("./pages/Login/Login.js")
+      import("./pages/Login.js")
         .then((module) => {
           changeMainContent(module.render());
           module.setupLogin();
@@ -109,13 +109,13 @@ export const loadComponent = (component) => {
         });
       break;
     case "register":
-      import("./pages/Register/Register.js").then((module) => {
+      import("./pages/Register.js").then((module) => {
         changeMainContent(module.render());
         module.setupRegister();
       });
       break;
     case "personalPage":
-      import("./pages/PersonalPage/PersonalPage.js")
+      import("./pages/PersonalPage.js")
         .then((module) => {
           changeMainContent(module.render());
           module.setupMyProfile();
