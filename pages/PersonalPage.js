@@ -140,6 +140,7 @@ export async function setupMyProfile() {
       if (profileContainer) profileContainer.style.opacity = 1;
       return;
     }
+    const userId = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     if (!token) {
       console.error(
@@ -232,6 +233,7 @@ export async function setupMyProfile() {
     feedbackMessage.innerHTML = FeedbackMessage({ message: "Procesando registro...", type: "info" });
     const formData = new FormData();
     formData.append("img", file);
+    const userId = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     try {
       const res = await apiFetch(`/users/profileImage/${userId}`, {
